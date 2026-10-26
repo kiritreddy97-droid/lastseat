@@ -6,6 +6,15 @@ services:
     plan: free
     healthCheckPath: /health
     envVars:
+      # Staging-style pilot: fake payments and console OTP (codes appear in logs). See docs/09-owner-checklist.md.
+      - key: APP_ENV
+        value: staging
+      - key: JWT_SECRET
+        generateValue: true
+      - key: PAYMENT_WEBHOOK_SECRET
+        generateValue: true
+      - key: ADMIN_API_KEY
+        generateValue: true
       - key: DATABASE_URL
         fromDatabase:
           name: lastseat-db
