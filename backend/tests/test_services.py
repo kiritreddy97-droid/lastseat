@@ -1,11 +1,11 @@
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 import pytest
 
 from app import services
 from app.models import Flight, Member
 
-NOW = datetime(2026, 11, 1, 9, 0)
+from .conftest import NOW
 
 
 def _member(db, email="a@x.in", with_pass=True):
@@ -69,7 +69,7 @@ def test_airline_pulls_seats_bumps_latest_first(db):
     second = services.book(db, _member(db, "2@x.in"), f, NOW + timedelta(minutes=1))
     third = services.book(db, _member(db, "3@x.in"), f, NOW + timedelta(minutes=2))
     first.created_at, second.created_at, third.created_at = NOW, NOW + timedelta(minutes=1), NOW + timedelta(minutes=2)
-    bumped = services.reduce_open_seats(db, f, 1)
+    bumped = services.reduce_open_seats(db, f, 1, NOW)
     assert [b.id for b in bumped] == [third.id, second.id]
     assert first.status == "confirmed" and f.open_seats == 0
 
@@ -79,3 +79,16 @@ def test_pass_renewal_extends_from_expiry(db):
     first_expiry = m.pass_expires_at
     services.buy_pass(db, m, NOW + timedelta(days=10))
     assert m.pass_expires_at == first_expiry + timedelta(days=365)
+
+
+def test_naive_datetimes_are_rejected_and_reads_are_utc(db):
+    from datetime import datetime
+
+    with pytest.raises(Exception, match="naive"):
+        db.add(Flight(airline="A", flight_no="A1", origin="BOM", destination="GOI",
+                      departs_at=datetime(2026, 11, 1, 12, 0), open_seats=1))
+        db.flush()
+    db.rollback()
+    f = _flight(db)
+    db.expire_all()
+    assert f.departs_at.tzinfo is not None and f.departs_at == NOW + timedelta(hours=20)

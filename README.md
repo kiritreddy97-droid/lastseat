@@ -8,8 +8,9 @@ Idea from a creator video: seats on departing flights earn nothing once the plan
 | Path | Purpose |
 |---|---|
 | `docs/` | Business plan, product requirements, architecture, roadmap, legal checklist, go-to-market, financial model, cloud setup |
-| `backend/app/` | FastAPI service: `models.py`, `services.py` (business rules), `main.py` (routes) |
-| `backend/tests/` | Unit tests for every business rule, plus an API smoke test |
+| `backend/app/` | FastAPI service: `services.py` (business rules), `flows.py` (payments/OTP/refund orchestration), `main.py` (routes), provider interfaces `payments.py`, `otp.py`, `notifications.py` |
+| `backend/migrations/` | Alembic migrations |
+| `backend/tests/` | Unit tests for every business rule, plus end-to-end API tests (auth failures, payments, bump and priority flow) and a migration check |
 | `web/index.html` | Draft landing page |
 | `finance/model.py` | Editable unit-economics model |
 | `Dockerfile`, `docker-compose.yml`, `render.yaml` | Container and cloud deployment |
@@ -20,12 +21,17 @@ Idea from a creator video: seats on departing flights earn nothing once the plan
 ```bash
 cd backend
 pip install -r requirements-dev.txt
+alembic upgrade head              # create the schema (SQLite file by default)
 pytest
 uvicorn app.main:app --reload     # http://localhost:8000/docs
 ```
-With Postgres: `docker compose up --build`.
+With Postgres: `docker compose up --build` (migrations run on start).
+
+Local login: `POST /auth/otp/request`, then read the code from the server log (dev console sender), then `POST /auth/otp/verify`. Settings are in `.env.example`.
 
 ## Status
-Backend MVP of the core rules is implemented and tested. Not production-ready: authentication, migrations, payments and integrations are listed as to-do in `docs/03-architecture.md`.
+Launchable **pilot MVP** with stand-in integrations: OTP login + JWT, partner API keys, Alembic migrations, timezone-aware time, payment/notification/OTP interfaces with fakes, signed payment webhook, refunds and priority rebooking for bumped members, rate limiting and JSON logging. CI runs lint, tests and migrations on Postgres.
+
+Not done because it needs your accounts or agreements: a real payment gateway, SMS provider, an airline partner and a deployment. See `docs/09-owner-checklist.md`; the engineering checklist is in `docs/03-architecture.md`.
 
 Start reading at `docs/01-business-plan.md`.

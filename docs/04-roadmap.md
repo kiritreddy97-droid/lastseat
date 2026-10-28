@@ -13,7 +13,7 @@
 ## Phase 2 - Integrate (months 6-9)
 - PSS/airline API integration
 - Mobile app, push alerts for new seats
-- Automated refunds and priority rebooking
+- Automated refunds and priority rebooking (built against fake payment/notification providers; real providers pending)
 
 ## Phase 3 - Scale (months 10-12)
 - More airlines and routes
